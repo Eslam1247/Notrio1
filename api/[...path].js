@@ -1,8 +1,20 @@
-// Vercel serverless entry point: every request to /api/* lands here and is handed to the
-// same Express app used for local development (../server/app.js) — no separate backend host needed.
-import app, { ready } from '../server/app.js'
+import app, { ready } from "../server/app.js";
 
 export default async function handler(req, res) {
-  await ready // make sure the DB connection/tables are set up before the first request is served
-  app(req, res)
+  try {
+    await ready;
+    return app(req, res);
+  } catch (error) {
+    console.error("Vercel API Error:", error);
+
+    if (!res.headersSent) {
+      return res.status(500).json({
+        error: "Internal server error",
+        message:
+          process.env.NODE_ENV === "production"
+            ? "تعذّر الاتصال بالسيرفر."
+            : error?.message || "Unknown error",
+      });
+    }
+  }
 }
